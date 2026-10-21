@@ -218,4 +218,24 @@ const CONTENT = {
     openScene: 'Go to',
     musicBlocked: 'Tap the note to start the music',
   },
+
+  /* ------------------------------------------------------------- countdown */
+  /* The gift stays sealed until the birthday. The countdown covers the page
+     from 6 June onwards and steps aside for the three days of the birthday
+     itself, then comes back for the following year.
+
+       month      1-based month of the birthday (6 = June)
+       day        the day of the birthday (3)
+       returnsOn  the day of June the countdown comes back (6)               */
+  countdown: {
+    enabled: true,
+    month: 6,
+    day: 3,
+    returnsOn: 6,
+    kicker: 'A little something, waiting for you',
+    title: 'The wait is nearly over',
+    body: 'Something of yours is waiting. It opens on the third of June, and not one minute before.',
+    skip: 'Read it anyway',
+    signOff: '— I will wait. You open it.',
+  },
 };

@@ -154,6 +154,47 @@ blocked, the note in the corner becomes a play button.
 
 ---
 
+## The countdown
+
+The gift is sealed until the birthday. A countdown sheet covers the whole page,
+counting down to the third of June, and steps aside for the birthday itself:
+
+| Date | What happens |
+|---|---|
+| 3 June | The countdown is gone. The gift opens. |
+| 4 – 5 June | Still open. |
+| 6 June | The countdown comes back, counting down to next year's 3 June. |
+| Every other day of the year | The countdown is up. The gift cannot be opened. |
+
+It is set in `content.js`:
+
+```js
+countdown: {
+  enabled: true,
+  month: 6,        // 1-based month of the birthday (6 = June)
+  day: 3,          // the birthday itself
+  returnsOn: 6,    // the day of June the countdown comes back
+  kicker: 'A little something, waiting for you',
+  title: 'The wait is nearly over',
+  body: 'Something of yours is waiting…',
+  skip: 'Read it anyway',
+  signOff: '— I will wait. You open it.',
+},
+```
+
+The **Read it anyway** button opens the gift early, for this visit. It is
+remembered for the rest of the browser session, so a refresh will not lock it
+again — but a new visit starts the wait over.
+
+The countdown is also live: if the page is left open and the clock rolls past
+midnight on 3 June, the sheet lifts itself and the gift opens. Leave it open
+over 5 June and it comes back on the 6th.
+
+To see the gift while you are still waiting, either press **Read it anyway** or
+set `enabled: false` in `content.js` while you are working on it.
+
+---
+
 ## Blowing out the candles
 
 The **Blow it out** button asks for microphone access and watches the audio graph

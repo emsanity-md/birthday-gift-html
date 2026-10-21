@@ -15,7 +15,7 @@
      10  scene 3 — the map
      11  scene 4 — the wish
      12  scene 5 — the finale
-     13  boot
+     14  boot
    ========================================================================== */
 
 (function () {
@@ -481,6 +481,8 @@
 
     function open() {
       if (opened) return;
+      /* the countdown seals the gift until the birthday */
+      if (Countdown.locked) return;
       opened = true;
 
       /* first gesture: unlock audio */
@@ -609,7 +611,187 @@
     }, 260);
   }
 
-  /* ═══════════════════════════════════════════════ 09  the album ══ */
+  /* ═════════════════════════════════════════════ 09  the countdown ══ */
+
+  /* The gift stays sealed until the birthday. The countdown covers the page
+     from `returnsOn` June onwards, steps aside for the birthday itself, and
+     comes back for the following year. */
+  const Countdown = {
+    el: null,
+    timer: null,
+    target: null,
+    locked: false,
+    dismissed: false,
+    STORE: 'postcard-countdown-dismissed',
+
+    init: function () {
+      const self = this;
+      const cfg = C.countdown;
+      this.el = $('#countdown');
+      if (!cfg || !cfg.enabled || !this.el) { this.ready(); return; }
+
+      this.cfg = cfg;
+      this.dismissed = this.read();
+
+      if (this.dismissed) { this.ready(); return; }
+
+      const state = this.state();
+      if (state.hidden) { this.ready(); return; }
+
+      this.target = state.target;
+      this.fill();
+      this.render();
+      this.lock();
+      this.start();
+      this.ready();
+    },
+
+    /* ── the calendar ── */
+
+    state: function () {
+      const cfg = this.cfg;
+      const now = new Date();
+      const m = (cfg.month || 6) - 1;
+      const day = cfg.day || 3;
+      const back = cfg.returnsOn || day + 3;
+
+      /* the birthday itself: no countdown, the gift is open */
+      if (now.getMonth() === m && now.getDate() >= day && now.getDate() < back) {
+        return { hidden: true };
+      }
+
+      let target = new Date(now.getFullYear(), m, day, 0, 0, 0, 0);
+      if (now.getTime() >= target.getTime()) {
+        target = new Date(now.getFullYear() + 1, m, day, 0, 0, 0, 0);
+      }
+      return { hidden: false, target: target };
+    },
+
+    /* ── the sheet ── */
+
+    fill: function () {
+      const cfg = this.cfg;
+      const y = this.target.getFullYear();
+      const monthName = ['January', 'February', 'March', 'April', 'May', 'June', 'July',
+        'August', 'September', 'October', 'November', 'December'][(cfg.month || 6) - 1];
+
+      $('#countdownKicker').textContent = cfg.kicker;
+      $('#countdownTitle').textContent = cfg.title;
+      $('#countdownBody').textContent = cfg.body;
+      $('#countdownSignOff').textContent = cfg.signOff;
+      $('#countdownSkip').textContent = cfg.skip;
+      $('#countdownOpens').textContent = 'It opens on ' + (cfg.day || 3) + ' ' + monthName + ' ' + y;
+      $('#countdown .postmark__year').textContent = y;
+    },
+
+    render: function () {
+      const total = Math.max(0, this.target.getTime() - Date.now());
+      const days = Math.floor(total / 86400000);
+      const hours = Math.floor((total % 86400000) / 3600000);
+      const minutes = Math.floor((total % 3600000) / 60000);
+      const seconds = Math.floor((total % 60000) / 1000);
+
+      $('#countdownDays').textContent = String(days);
+      $('#countdownHours').textContent = String(hours).padStart(2, '0');
+      $('#countdownMinutes').textContent = String(minutes).padStart(2, '0');
+      $('#countdownSeconds').textContent = String(seconds).padStart(2, '0');
+
+      if (total <= 0) this.unlock();
+    },
+
+    start: function () {
+      const self = this;
+      this.stop();
+      this.timer = setInterval(function () {
+        const state = self.state();
+
+        /* the window can open or close while the page is left open */
+        if (state.hidden) {
+          if (self.locked) self.unlock();
+          return;
+        }
+        if (!self.locked) {
+          self.target = state.target;
+          self.fill();
+          self.lock();
+        }
+        self.render();
+      }, 1000);
+    },
+
+    stop: function () {
+      if (this.timer) clearInterval(this.timer);
+      this.timer = null;
+    },
+
+    /* ── locking the page ── */
+
+    lock: function () {
+      if (this.locked) return;
+      this.locked = true;
+      this.el.hidden = false;
+      document.body.classList.add('is-locked');
+      this.seal(true);
+      const skip = $('#countdownSkip');
+      if (skip) skip.focus({ preventScroll: true });
+      const days = $('#countdownDays').textContent;
+      announce('This gift opens on 3 June. ' + days + ' days to go.');
+    },
+
+    unlock: function () {
+      if (!this.locked) return;
+      this.locked = false;
+      this.el.hidden = true;
+      document.body.classList.remove('is-locked');
+      this.seal(false);
+      announce('It is the third of June. Open your gift.');
+    },
+
+    /* keep the gift behind the countdown out of reach */
+    seal: function (on) {
+      const main = $('#journeyMain');
+      const dock = $('#dock');
+      const rail = $('#journey');
+      [main, dock, rail].forEach(function (el) {
+        if (!el) return;
+        if ('inert' in el) el.inert = on;
+        el.setAttribute('aria-hidden', on ? 'true' : 'false');
+      });
+    },
+
+    dismiss: function () {
+      if (this.dismissed) return;
+      this.dismissed = true;
+      this.unlock();
+      this.stop();
+      try { sessionStorage.setItem(this.STORE, '1'); } catch (e) { /* private mode */ }
+      const env = $('#envelope');
+      if (env) env.focus({ preventScroll: true });
+    },
+
+    read: function () {
+      try { return sessionStorage.getItem(this.STORE) === '1'; } catch (e) { return false; }
+    },
+
+    ready: function () {
+      document.body.classList.add('countdown-ready');
+    },
+
+    wire: function () {
+      const self = this;
+      const skip = $('#countdownSkip');
+      if (skip) skip.addEventListener('click', function () { self.dismiss(); });
+
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && self.locked) {
+          e.preventDefault();
+          self.dismiss();
+        }
+      });
+    }
+  };
+
+  /* ═══════════════════════════════════════════════ 10  the album ══ */
 
   /* "3 / 4" -> 0.75 */
   function ratioValue(ratio) {
@@ -954,7 +1136,7 @@
     }
   };
 
-  /* ═════════════════════════════════════════════════ 10  the map ══ */
+  /* ═════════════════════════════════════════════════ 11  the map ══ */
 
   const MapScene = {
     pins: [],
@@ -1081,7 +1263,7 @@
     return d;
   }
 
-  /* ══════════════════════════════════════════════ 11  the wish ══ */
+  /* ══════════════════════════════════════════════ 12  the wish ══ */
 
   const Wish = {
     candles: [],
@@ -1258,7 +1440,7 @@
     }
   };
 
-  /* ═════════════════════════════════════════════ 12  the finale ══ */
+  /* ═════════════════════════════════════════════ 13  the finale ══ */
 
   function stampFinale() {
     const pm = $('#finalePostmark');
@@ -1300,7 +1482,7 @@
     $$('.scene').forEach(function (s) { obs.observe(s); });
   }
 
-  /* ═══════════════════════════════════════════════════ 13  boot ══ */
+  /* ═══════════════════════════════════════════════════ 14  boot ══ */
 
   function boot() {
     document.body.classList.remove('is-booting');
@@ -1321,6 +1503,11 @@
     wireSceneTriggers();
 
     Confetti.init();
+
+    /* the countdown decides whether the gift is sealed away, so it runs
+       first and holds the page back until it has made up its mind */
+    Countdown.wire();
+    Countdown.init();
 
     /* a whisper of paper in the air, once things are ready */
     if (!reduced) {

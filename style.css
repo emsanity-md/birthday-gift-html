@@ -1317,7 +1317,200 @@ button { font: inherit; color: inherit; }
   margin-top: clamp(24px, 5vh, 42px);
 }
 
-/* ────────────────────────── 13  dock, buttons, transitions ── */
+/* ─────────────────────────────────── 13  the countdown overlay ── */
+.countdown {
+  position: fixed;
+  inset: 0;
+  z-index: 95;
+  display: grid;
+  place-items: center;
+  padding: clamp(16px, 4vw, 40px);
+  overflow-y: auto;
+  background:
+    radial-gradient(125% 90% at 50% -8%, #FCF7EC 0%, #F1E6D3 46%, #DDCBB0 100%);
+}
+.countdown[hidden] { display: none; }
+
+.countdown__sheet {
+  position: relative;
+  width: 100%;
+  max-width: 540px;
+  padding: clamp(30px, 6vw, 54px) clamp(22px, 5vw, 46px) clamp(26px, 5vw, 40px);
+  border-radius: 4px;
+  text-align: center;
+  background:
+    radial-gradient(120% 90% at 50% 0%, #FFFDF7 0%, var(--mat) 55%, #F0E6D5 100%);
+  box-shadow: var(--sh-4), 0 0 0 1px rgba(120, 96, 62, .14);
+  animation: sheetDrop .75s var(--ease-out) both;
+}
+@keyframes sheetDrop {
+  from { opacity: 0; transform: translateY(-26px) rotate(-.6deg); }
+  to   { opacity: 1; transform: none; }
+}
+
+.countdown__frame {
+  position: absolute;
+  inset: 12px;
+  border: 1.5px solid rgba(192, 69, 61, .2);
+  border-radius: 2px;
+  pointer-events: none;
+}
+.countdown__frame::before {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  border: 1px solid rgba(47, 93, 140, .15);
+}
+
+.countdown__stamp {
+  position: absolute;
+  right: clamp(14px, 4vw, 30px);
+  top: clamp(14px, 4vw, 30px);
+  width: 92px;
+  color: var(--red);
+  opacity: .78;
+  transform: rotate(-8deg);
+  pointer-events: none;
+}
+
+.countdown__kicker {
+  font-family: var(--f-mono);
+  font-size: .64rem;
+  letter-spacing: .3em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin: 0 0 .7rem;
+  padding: 0 78px;
+}
+
+.countdown__title {
+  font-family: var(--f-display);
+  font-variation-settings: 'SOFT' 30, 'WONK' 1;
+  font-weight: 600;
+  font-size: clamp(1.7rem, 6vw, 2.6rem);
+  line-height: 1.06;
+  letter-spacing: -.015em;
+  margin: 0 auto;
+  max-width: 15ch;
+  text-wrap: balance;
+}
+
+.countdown__days {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: .55rem;
+  margin: clamp(1.1rem, 3vw, 1.8rem) 0 0;
+  font-family: var(--f-display);
+  font-variation-settings: 'SOFT' 24, 'WONK' 1;
+  font-weight: 700;
+  font-size: clamp(4rem, 17vw, 7.4rem);
+  line-height: .88;
+  letter-spacing: -.03em;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.countdown__days small {
+  font-family: var(--f-mono);
+  font-size: .66rem;
+  font-weight: 400;
+  letter-spacing: .3em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.countdown__clock {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: clamp(.4rem, 2vw, .8rem);
+  margin: .9rem 0 0;
+}
+.countdown__clock span { display: flex; flex-direction: column; align-items: center; }
+.countdown__clock b {
+  font-family: var(--f-mono);
+  font-size: clamp(1.15rem, 4.4vw, 1.6rem);
+  font-weight: 700;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+.countdown__clock small {
+  font-family: var(--f-mono);
+  font-size: .5rem;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-top: .25rem;
+}
+.countdown__clock i {
+  font-style: normal;
+  font-family: var(--f-mono);
+  font-size: clamp(1rem, 3.6vw, 1.3rem);
+  line-height: 1.25;
+  color: var(--ink-faint);
+}
+
+.countdown__rule {
+  width: 54px;
+  height: 1px;
+  margin: clamp(1.2rem, 3vw, 1.7rem) auto .9rem;
+  background: var(--ink-faint);
+  opacity: .45;
+}
+
+.countdown__body {
+  font-family: var(--f-hand);
+  font-size: clamp(1.2rem, 3.4vw, 1.45rem);
+  line-height: 1.3;
+  color: var(--ink-2);
+  margin: 0 auto;
+  max-width: 30ch;
+  text-wrap: balance;
+}
+.countdown__opens {
+  font-family: var(--f-mono);
+  font-size: .64rem;
+  letter-spacing: .24em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin: .8rem 0 0;
+}
+.countdown__sign {
+  font-family: var(--f-hand);
+  font-size: 1.1rem;
+  color: var(--ink-soft);
+  margin: .35rem 0 0;
+}
+
+.countdown__skip {
+  margin-top: clamp(1.3rem, 3.5vw, 1.9rem);
+  padding: .62rem 1.35rem;
+  border-radius: 999px;
+  border: 1.5px solid var(--ink-faint);
+  background: transparent;
+  color: var(--ink-soft);
+  font-family: var(--f-mono);
+  font-size: .64rem;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color .25s, color .25s, background .25s, transform .25s var(--ease-back);
+}
+.countdown__skip:hover {
+  border-color: var(--ink);
+  color: var(--ink);
+  background: var(--paper-2);
+  transform: translateY(-2px);
+}
+
+/* while the countdown is up, the gift underneath is sealed away */
+body.is-locked { overflow: hidden; }
+body:not(.countdown-ready) #journeyMain,
+body:not(.countdown-ready) .journey,
+body:not(.countdown-ready) .dock { opacity: 0; }
+
+/* ────────────────────────── 14  dock, buttons, transitions ── */
 .dock {
   position: fixed;
   left: clamp(14px, 3vw, 26px);
@@ -1428,7 +1621,7 @@ button { font: inherit; color: inherit; }
   transition: transform .68s var(--ease-soft), opacity .2s ease .45s;
 }
 
-/* ──────────────────────────────────────────────── 14  responsive ── */
+/* ──────────────────────────────────────────────── 15  responsive ── */
 @media (max-width: 1000px) {
   .journey {
     left: 0; right: 0; top: 0; bottom: auto;
@@ -1467,6 +1660,10 @@ button { font: inherit; color: inherit; }
 
 @media (max-width: 640px) {
   :root { --gut: 18px; }
+  .countdown__sheet { padding: 26px 20px 24px; }
+  .countdown__kicker { font-size: .56rem; letter-spacing: .22em; padding: 0 62px; }
+  .countdown__stamp { width: 74px; top: 10px; right: 10px; }
+  .countdown__title { font-size: 1.6rem; }
   .album__stage { height: clamp(300px, 52vh, 420px); }
   .album__gallery { height: clamp(300px, 52vh, 420px); }
   .print { width: calc(var(--w, 300px) * .74); }

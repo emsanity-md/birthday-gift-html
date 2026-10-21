@@ -371,6 +371,59 @@
 
 </main>
 
+<!-- ══════════════════════════════════════════════════════ countdown ══ -->
+<div class="countdown" id="countdown" hidden>
+  <div class="countdown__sheet" role="dialog" aria-modal="true"
+       aria-labelledby="countdownTitle" aria-describedby="countdownBody">
+
+    <span class="countdown__frame" aria-hidden="true"></span>
+
+    <div class="countdown__stamp" aria-hidden="true">
+      <svg viewBox="-60 -46 120 92">
+        <defs>
+          <path id="cdArc" d="M-34 0a34 34 0 1 1 68 0" />
+          <filter id="cdInk" x="-15%" y="-25%" width="130%" height="150%">
+            <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="23" result="n" />
+            <feDisplacementMap in="SourceGraphic" in2="n" scale="2.6" xChannelSelector="R" yChannelSelector="G" />
+          </filter>
+        </defs>
+        <g class="postmark__ink" filter="url(#cdInk)">
+          <circle r="40" fill="none" stroke-width="2.6" />
+          <circle r="24" fill="none" stroke-width="1.3" />
+          <text class="postmark__ring"><textPath href="#cdArc" startOffset="50%" text-anchor="middle">OPENS ON</textPath></text>
+          <text class="postmark__day" y="2" text-anchor="middle">3</text>
+          <text class="postmark__month" y="14" text-anchor="middle">JUNE</text>
+          <text class="postmark__year" y="26" text-anchor="middle">2027</text>
+        </g>
+      </svg>
+    </div>
+
+    <p class="countdown__kicker" id="countdownKicker">A little something, waiting for you</p>
+    <h2 class="countdown__title" id="countdownTitle">The wait is nearly over</h2>
+
+    <p class="countdown__days">
+      <span id="countdownDays">000</span>
+      <small>days</small>
+    </p>
+
+    <p class="countdown__clock" id="countdownClock">
+      <span><b id="countdownHours">00</b><small>hours</small></span>
+      <i>:</i>
+      <span><b id="countdownMinutes">00</b><small>minutes</small></span>
+      <i>:</i>
+      <span><b id="countdownSeconds">00</b><small>seconds</small></span>
+    </p>
+
+    <div class="countdown__rule" aria-hidden="true"></div>
+
+    <p class="countdown__body" id="countdownBody">Something of yours is waiting.</p>
+    <p class="countdown__opens" id="countdownOpens">It opens on 3 June 2027</p>
+    <p class="countdown__sign" id="countdownSignOff">— I will wait. You open it.</p>
+
+    <button class="countdown__skip" id="countdownSkip" type="button">Read it anyway</button>
+  </div>
+</div>
+
 <!-- ══════════════════════════════════════════════════════ music dock ══ -->
 <div class="dock" id="dock">
   <button class="dock__btn" id="musicBtn" type="button" aria-label="Play music" aria-pressed="false">
