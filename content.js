@@ -60,8 +60,8 @@ const CONTENT = {
   album: {
     kicker: 'Chapter Two',
     title: 'The Album',
-    intro: 'Six prints, kept. Turn each one over.',
-    hint: 'Tap a print to turn it over · swipe or use ← →',
+    intro: 'Six prints, kept. Open each one.',
+    hint: 'Tap a print to open it · swipe or use ← →',
     prints: [
       {
         id: '5',
@@ -212,7 +212,7 @@ const CONTENT = {
     scroll: 'Scroll',
     next: 'Next print',
     prev: 'Previous print',
-    flip: 'Turn the print over',
+    flip: 'Open the print',
     play: 'Play music',
     pause: 'Pause music',
     openScene: 'Go to',

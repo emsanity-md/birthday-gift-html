@@ -611,12 +611,215 @@
 
   /* ═══════════════════════════════════════════════ 09  the album ══ */
 
-  const Album = {
-    prints: [],
-    active: 0,
-    stage: $('#albumStage'),
+  /* "3 / 4" -> 0.75 */
+  function ratioValue(ratio) {
+    if (typeof ratio === 'number') return ratio;
+    const parts = String(ratio).split('/').map(function (n) { return parseFloat(n); });
+    if (parts.length !== 2 || !parts[0] || !parts[1]) return 0.78;
+    return parts[0] / parts[1];
+  }
 
-    build: function () {
+  /* Draw a print onto an offscreen canvas — cream paper, the photo at its own
+     ratio, a hairline mount and a strip of washi tape. The canvas becomes the
+     card texture, so the shader never has to crop the photo. */
+  function composePrint(image, item) {
+    const aspect = item.aspect || 0.78;
+    const W = 760;
+    const H = Math.round(W / aspect);
+    const c = document.createElement('canvas');
+    c.width = W;
+    c.height = H;
+    const g = c.getContext('2d');
+
+    /* paper */
+    g.fillStyle = '#FCF8F1';
+    g.fillRect(0, 0, W, H);
+
+    /* mount */
+    const mat = Math.round(W * 0.05);
+    const innerW = W - mat * 2;
+    const innerH = H - mat * 2;
+
+    /* the photo, at its own ratio, so nothing is ever cropped */
+    const ir = image.naturalWidth / Math.max(1, image.naturalHeight);
+    const br = innerW / innerH;
+    let dw, dh;
+    if (ir > br) { dw = innerW; dh = innerW / ir; } else { dh = innerH; dw = innerH * ir; }
+    const dx = mat + (innerW - dw) / 2;
+    const dy = mat + (innerH - dh) / 2;
+    g.drawImage(image, dx, dy, dw, dh);
+
+    /* hairline around the mount */
+    g.strokeStyle = 'rgba(120, 96, 62, .22)';
+    g.lineWidth = Math.max(1, W * 0.0022);
+    g.strokeRect(dx + 0.5, dy + 0.5, dw - 1, dh - 1);
+
+    /* washi tape across the top */
+    const tw = W * 0.28;
+    const th = W * 0.075;
+    g.save();
+    g.translate(W / 2, mat * 0.55);
+    g.rotate(-0.045);
+    g.shadowColor = 'rgba(74, 52, 28, .30)';
+    g.shadowBlur = W * 0.012;
+    g.shadowOffsetY = W * 0.004;
+    g.fillStyle = 'rgba(212, 115, 122, .40)';
+    g.fillRect(-tw / 2, -th / 2, tw, th);
+    g.shadowColor = 'transparent';
+    g.fillStyle = 'rgba(255, 255, 255, .32)';
+    g.save();
+    g.beginPath();
+    g.rect(-tw / 2, -th / 2, tw, th);
+    g.clip();
+    for (let i = -tw; i < tw; i += W * 0.05) {
+      g.save();
+      g.translate(i, 0);
+      g.rotate(-0.62);
+      g.fillRect(0, -th, W * 0.017, th * 3);
+      g.restore();
+    }
+    g.restore();
+    g.restore();
+
+    return c;
+  }
+
+  /* The note that slides in under a focused print. */
+  function noteHTML(p, index) {
+    return '<div class="print-note">' +
+      '<span class="print-note__stamp">Postage<br>' + String(index + 1).padStart(2, '0') + '</span>' +
+      '<p class="print-note__title">' + p.title + '</p>' +
+      '<p class="print-note__caption">' + p.caption + '</p>' +
+      '<p class="print-note__note">' + p.note + '</p>' +
+      '<p class="print-note__meta"><span>' + p.place + '</span><span>' + p.date + '</span></p>' +
+      '</div>';
+  }
+
+  const Album = {
+    gallery: null,
+    mode: 'none',
+    active: 0,
+    prints: [],
+    stage: null,
+
+    init: function () {
+      const self = this;
+      this.stage = $('#albumStage');
+
+      const items = C.album.prints.map(function (p, i) {
+        return {
+          image: 'images/opt/' + p.id + '-800.webp',
+          text: p.title,
+          description: p.caption,
+          aspect: ratioValue(p.ratio),
+          alt: p.title,
+          index: i
+        };
+      });
+
+      const host = $('#albumGallery');
+      if (host && window.supportsWebGL2 && window.supportsWebGL2()) {
+        try {
+          this.gallery = window.createCircularGallery(host, {
+            items: items,
+            label: 'The album',
+            bend: 2.2,
+            textColor: '#23262B',
+            borderRadius: 0.012,
+            font: '600 20px "Fraunces"',
+            scrollSpeed: 2,
+            scrollEase: 0.05,
+            itemSize: 1.05,
+            itemAspect: 0.78,
+            gap: 0.10,
+            wave: 1,
+            fadeEdges: 0.12,
+            shadow: 0.25,
+            grayscale: false,
+            showTitles: true,
+            snap: true,
+            autoScroll: 0.12,
+            openOnClick: true,
+            intro: true,
+            captionSpace: self.captionSpace(),
+            decorate: composePrint,
+            onItemClick: function (item, index) { self.say(index); },
+            onActiveChange: function (index) { self.setActive(index); },
+            onOpenChange: function (isOpen, index) { self.setNote(isOpen, index); }
+          });
+        } catch (err) {
+          console.warn('The circular gallery could not start:', err);
+          this.gallery = null;
+        }
+      }
+
+      if (this.gallery) {
+        this.mode = 'webgl';
+        $('#album').classList.add('is-gallery');
+        let rt = 0;
+        window.addEventListener('resize', function () {
+          clearTimeout(rt);
+          rt = setTimeout(function () {
+            if (self.gallery) self.gallery.update({ captionSpace: self.captionSpace() });
+          }, 180);
+        });
+      } else {
+        this.mode = 'css';
+        this.buildCss();
+      }
+
+      this.setActive(0);
+    },
+
+    captionSpace: function () {
+      return window.innerWidth < 640 ? 128 : 150;
+    },
+
+    setActive: function (index) {
+      this.active = index;
+      $('#albumIndex').textContent = index + 1;
+      $('#albumPrev').disabled = index === 0;
+      $('#albumNext').disabled = index === C.album.prints.length - 1;
+    },
+
+    say: function (index) {
+      const p = C.album.prints[index];
+      if (!p) return;
+      announce('Print ' + (index + 1) + ' of ' + C.album.prints.length + ': ' + p.title + '. ' + p.caption);
+    },
+
+    setNote: function (isOpen, index) {
+      const caption = $('#albumGallery .circular-gallery-caption');
+      if (!caption) return;
+      if (isOpen) {
+        const p = C.album.prints[index];
+        if (!p) return;
+        caption.innerHTML = noteHTML(p, index);
+        caption.classList.add('is-open');
+      } else {
+        caption.classList.remove('is-open');
+        caption.innerHTML = '';
+      }
+    },
+
+    go: function (dir) {
+      const total = C.album.prints.length;
+      const next = clamp(this.active + dir, 0, total - 1);
+      if (next === this.active) return;
+      if (this.mode === 'webgl' && this.gallery) {
+        this.gallery.focus(next);
+        this.setActive(next);
+      } else {
+        this.active = next;
+        this.place();
+        const d = C.album.prints[this.active];
+        announce('Print ' + (this.active + 1) + ': ' + d.title);
+      }
+    },
+
+    /* ─────────────────────────────────── fallback: the CSS 3D carousel ── */
+
+    buildCss: function () {
       const self = this;
       C.album.prints.forEach(function (data, i) {
         const el = document.createElement('div');
@@ -689,18 +892,7 @@
         el.tabIndex = on ? 0 : -1;
         el.setAttribute('aria-hidden', on ? 'false' : 'true');
       });
-      $('#albumIndex').textContent = self.active + 1;
-      $('#albumPrev').disabled = self.active === 0;
-      $('#albumNext').disabled = self.active === self.prints.length - 1;
-    },
-
-    go: function (dir) {
-      const next = clamp(this.active + dir, 0, this.prints.length - 1);
-      if (next === this.active) return;
-      this.active = next;
-      this.place();
-      const d = C.album.prints[this.active];
-      announce('Print ' + (this.active + 1) + ': ' + d.title);
+      this.setActive(self.active);
     },
 
     flip: function (el) {
@@ -738,25 +930,27 @@
       $('#albumNext').addEventListener('click', function () { self.go(1); });
       $('#albumPrev').addEventListener('click', function () { self.go(-1); });
 
-      /* keyboard */
-      $('#album').addEventListener('keydown', function (e) {
-        if (e.key === 'ArrowRight') { e.preventDefault(); self.go(1); }
-        if (e.key === 'ArrowLeft')  { e.preventDefault(); self.go(-1); }
-      });
+      /* keyboard — the gallery handles its own when it is running */
+      if (self.mode === 'css') {
+        $('#album').addEventListener('keydown', function (e) {
+          if (e.key === 'ArrowRight') { e.preventDefault(); self.go(1); }
+          if (e.key === 'ArrowLeft')  { e.preventDefault(); self.go(-1); }
+        });
 
-      /* swipe */
-      let x0 = null, y0 = null;
-      const stage = this.stage;
-      stage.addEventListener('pointerdown', function (e) {
-        x0 = e.clientX; y0 = e.clientY;
-      });
-      stage.addEventListener('pointerup', function (e) {
-        if (x0 === null) return;
-        const dx = e.clientX - x0, dy = e.clientY - y0;
-        x0 = null;
-        if (Math.abs(dx) > 42 && Math.abs(dx) > Math.abs(dy)) self.go(dx < 0 ? 1 : -1);
-      });
-      stage.addEventListener('pointercancel', function () { x0 = null; });
+        /* swipe */
+        let x0 = null, y0 = null;
+        const stage = this.stage;
+        stage.addEventListener('pointerdown', function (e) {
+          x0 = e.clientX; y0 = e.clientY;
+        });
+        stage.addEventListener('pointerup', function (e) {
+          if (x0 === null) return;
+          const dx = e.clientX - x0, dy = e.clientY - y0;
+          x0 = null;
+          if (Math.abs(dx) > 42 && Math.abs(dx) > Math.abs(dy)) self.go(dx < 0 ? 1 : -1);
+        });
+        stage.addEventListener('pointercancel', function () { x0 = null; });
+      }
     }
   };
 
@@ -1116,7 +1310,7 @@
     wireDock();
     buildMotes();
     buildRail();
-    Album.build();
+    Album.init();
     Album.wire();
     MapScene.wire();
     Wish.wire();
@@ -1133,10 +1327,16 @@
       setTimeout(function () { Confetti.rain({ count: 8 }); }, 1200);
     }
 
-    /* open on a random print, so the album never feels the same twice */
+    /* open on a different print each time, so the album never feels the same twice */
     if (Math.random() > 0.5) {
-      Album.active = Math.min(Album.prints.length - 1, 2);
-      Album.place();
+      const start = Math.min(C.album.prints.length - 1, 2);
+      if (Album.mode === 'webgl' && Album.gallery) {
+        Album.gallery.focus(start);
+        Album.setActive(start);
+      } else {
+        Album.active = start;
+        Album.place();
+      }
     }
 
     if (document.fonts && document.fonts.ready) {

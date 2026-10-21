@@ -663,6 +663,15 @@ button { font: inherit; color: inherit; }
   perspective-origin: 50% 46%;
 }
 
+/* the WebGL arc — replaces the CSS carousel when it can run */
+.album__gallery {
+  display: none;
+  position: relative;
+  height: clamp(320px, 54vh, 520px);
+}
+.album.is-gallery .album__gallery { display: block; }
+.album.is-gallery .album__stage { display: none; }
+
 .print {
   position: absolute;
   top: 50%; left: 50%;
@@ -1459,6 +1468,7 @@ button { font: inherit; color: inherit; }
 @media (max-width: 640px) {
   :root { --gut: 18px; }
   .album__stage { height: clamp(300px, 52vh, 420px); }
+  .album__gallery { height: clamp(300px, 52vh, 420px); }
   .print { width: calc(var(--w, 300px) * .74); }
   .album__meta { min-width: 0; }
   .album__hint { font-size: .95rem; }

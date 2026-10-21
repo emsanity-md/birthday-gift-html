@@ -30,7 +30,9 @@ python -m http.server 8000
 |---|---|
 | `index.html` | The markup. Six `<section class="scene">` blocks, one per scene. |
 | `style.css` | Every visual decision: tokens, the paper system, the 3D scenes, all keyframes. |
-| `script.js` | The engine: scene controller, audio, mic blow detection, the album carousel, the map, the confetti. |
+| `script.js` | The engine: scene controller, audio, mic blow detection, the album, the map, the confetti. |
+| `circular-gallery.js` | A WebGL2 arc of cards — the album. Vanilla, no framework. |
+| `circular-gallery.css` | The gallery's styles, plus the paper note that slides in under a print. |
 | **`content.js`** | **Everything you want to change.** No code below this file needs touching. |
 | `music.mp3` | The background track. |
 | `images/` | Your original photos, plus `images/opt/` — WebP + JPEG copies at two sizes for fast loading. |
@@ -81,15 +83,41 @@ prints: [
     caption: 'You and the loudest wall in the world.',
     place: 'The green room',
     date: 'Some afternoon',
-    note: 'A longer note, shown on the back of the print.',
+    note: 'A longer note, shown under the print when you open it.',
   },
 ],
 ```
 
 `ratio` is the photo's real width-to-height ratio so nothing is ever cropped.
 Measure it in any image viewer, or: `ratio: (width / height) + ' / ' + height`.
-`w` controls how large the print appears — bigger for landscape photos, smaller
-for tall ones.
+
+Each print is drawn onto its own card — cream paper, the photo at its true
+ratio, a hairline mount and a strip of washi tape — and that card becomes the
+texture the gallery renders, so the photos are never cropped or squashed.
+`w` only matters for the no-WebGL2 fallback.
+
+### The album gallery
+
+The six prints sit on a gentle arc in WebGL2. Drag or scroll to move along it,
+tap a print to bring it forward and read the note underneath, and the arc
+creeps along on its own when you leave it alone.
+
+```js
+const gallery = createCircularGallery(document.getElementById('albumGallery'), {
+  items: [{ image: 'photo.jpg', text: 'A title', description: '…', aspect: 0.75 }],
+  bend: 2.2,
+  onItemClick: (item, index) => {}
+});
+```
+
+It is a plain JavaScript file — no framework, no build step. If a browser has
+no WebGL2 the album quietly falls back to a CSS 3D carousel instead, so the
+prints always work.
+
+Useful options: `bend` (how curved the arc is), `gap`, `wave` (the ripple when
+you fling it), `autoScroll` (the idle drift), `snap`, `shadow`, `grayscale`,
+`showTitles`, `captionSpace` (room reserved for the note under an open print),
+and `decorate` (a function returning the canvas to use as a card texture).
 
 ### The map
 
@@ -155,13 +183,14 @@ top of `style.css`.
 ## Accessibility and motion
 
 - Every interaction works from the keyboard. <kbd>←</kbd> / <kbd>→</kbd> move
-  through the prints, <kbd>Enter</kbd> or <kbd>Space</kbd> turns one over,
-  <kbd>Esc</kbd> closes the map note.
+  through the prints, <kbd>Enter</kbd> or <kbd>Space</kbd> opens one,
+  <kbd>Esc</kbd> closes the map note or the open print.
 - Focus is visible everywhere, and the scene changes are announced to screen
-  readers.
+  readers. The gallery keeps a hidden, focusable list of every print, so a
+  screen reader can walk the album one item at a time.
 - `prefers-reduced-motion: reduce` is respected: the letter appears at once
-  instead of typing, the print flips without the arc, the drifting paper stops,
-  and the confetti stays still.
+  instead of typing, the arc does not drift or ripple, the print opens without
+  the animation, and the drifting paper stops.
 - The photos are never cropped, and each one has alt text from `content.js`.
 
 ---
