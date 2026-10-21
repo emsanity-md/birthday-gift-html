@@ -806,7 +806,7 @@
      card texture, so the shader never has to crop the photo. */
   function composePrint(image, item) {
     const aspect = item.aspect || 0.78;
-    const W = 760;
+    const W = 640;
     const H = Math.round(W / aspect);
     const c = document.createElement('canvas');
     c.width = W;
@@ -907,6 +907,7 @@
             label: 'The album',
             bend: 2.2,
             textColor: '#23262B',
+            placeholderColor: '#FCF8F1',
             borderRadius: 0.012,
             font: '600 20px "Fraunces"',
             scrollSpeed: 2,
