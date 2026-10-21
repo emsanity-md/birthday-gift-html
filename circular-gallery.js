@@ -201,6 +201,7 @@ void main() {
       items: Array.isArray(opts.items) && opts.items.length ? opts.items : [],
       bend: opts.bend !== undefined ? opts.bend : 3,
       textColor: opts.textColor || '#ffffff',
+      placeholderColor: opts.placeholderColor || opts.textColor || '#ffffff',
       borderRadius: clamp(opts.borderRadius !== undefined ? opts.borderRadius : 0.05, 0, 0.5),
       font: opts.font || DEFAULT_FONT,
       scrollSpeed: Math.max(0, opts.scrollSpeed !== undefined ? opts.scrollSpeed : 2),
@@ -599,7 +600,7 @@ void main() {
       gl.uniform1f(u.uFocal, view.height * 1.207 * ratio);
       gl.uniform1f(u.uWaveTime, state.waveTime);
       gl.uniform1f(u.uFade, settings.fadeEdges);
-      gl.uniform3fv(u.uPlaceholder, parse(settings.textColor));
+      gl.uniform3fv(u.uPlaceholder, parse(settings.placeholderColor));
       gl.uniform3fv(u.uRingColor, parse(settings.textColor));
       gl.uniform1f(u.uRingWidth, 2 * ratio);
       gl.uniform1f(u.uRingGap, 5 * ratio);
@@ -747,7 +748,6 @@ void main() {
       if (settings.items !== lastItems) {
         lastItems = settings.items;
         prune(settings.items);
-        settings.items.forEach((item) => textureFor(item.image, item));
       }
 
       const idle = now - state.lastInput > 1800;
@@ -803,7 +803,10 @@ void main() {
         settling = true;
       });
 
-      const slot = auto ? Math.round(state.scroll / Math.max(state.spacing, 1)) : nearest();
+      /* follow the target, never the live scroll position — while the scroll
+         is easing the two disagree, and letting the position win makes the
+         selection chatter back and forth */
+      const slot = nearest();
       if (slot !== state.active && !state.drag) {
         state.active = slot;
         const index = wrap(slot, settings.items.length);
@@ -1059,7 +1062,6 @@ void main() {
     closeBtn.addEventListener('click', () => close());
 
     lastItems = settings.items;
-    settings.items.forEach((item) => textureFor(item.image, item));
     resize();
 
     const slotFor = (index) => {
@@ -1083,7 +1085,6 @@ void main() {
         if (settings.items !== lastItems) {
           lastItems = settings.items;
           prune(settings.items);
-          settings.items.forEach((item) => textureFor(item.image, item));
         }
         resize();
         wake();

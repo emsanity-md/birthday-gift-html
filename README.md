@@ -98,7 +98,7 @@ texture the gallery renders, so the photos are never cropped or squashed.
 
 ### The album gallery
 
-The six prints sit on a gentle arc in WebGL2. Drag or scroll to move along it,
+The prints sit on a gentle arc in WebGL2. Drag or scroll to move along it,
 tap a print to bring it forward and read the note underneath, and the arc
 creeps along on its own when you leave it alone.
 
